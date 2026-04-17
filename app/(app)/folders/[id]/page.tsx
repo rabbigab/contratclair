@@ -72,7 +72,7 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
               </Button>
             </Link>
             {docCount > 0 && (
-              <StartAuditButton folderId={id} disabled={!hasAll3} />
+              <StartAuditButton folderId={id} disabled={false} />
             )}
           </div>
           {docCount > 0 && !hasAll3 && (
