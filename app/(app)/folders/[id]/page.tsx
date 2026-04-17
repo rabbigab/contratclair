@@ -5,12 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatEur } from "@/lib/utils";
-import { Upload, Play } from "lucide-react";
+import {
+  Upload,
+  CheckCircle2,
+  Circle,
+  TrendingDown,
+  Clock,
+  XCircle,
+  FileText,
+  Receipt,
+  FileCheck,
+} from "lucide-react";
 import { StartAuditButton } from "./start-audit-button";
 
-export const maxDuration = 300; // allow up to 5 min for AI pipeline
-
-export default async function FolderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FolderPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const supabase = await createClient();
   const {
@@ -18,7 +30,11 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: folder } = await supabase.from("folders").select("*").eq("id", id).single();
+  const { data: folder } = await supabase
+    .from("folders")
+    .select("*")
+    .eq("id", id)
+    .single();
   if (!folder) notFound();
 
   const { data: documents } = await supabase
@@ -35,74 +51,137 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
 
   const docCount = documents?.length ?? 0;
   const types = new Set(documents?.map((d) => d.type) ?? []);
-  const hasAll3 = ["contract", "proposal", "invoice"].every((t) => types.has(t));
+  const hasContract = types.has("contract");
+  const hasProposal = types.has("proposal");
+  const hasInvoice = types.has("invoice");
+  const hasAll3 = hasContract && hasProposal && hasInvoice;
+
+  const latestAudit = audits?.[0];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{folder.name}</h1>
-        {folder.supplier_name && <p className="text-muted-foreground">{folder.supplier_name}</p>}
+        {folder.supplier_name && (
+          <p className="mt-1 text-muted-foreground">{folder.supplier_name}</p>
+        )}
       </div>
 
+      {/* Document checklist + list */}
       <Card>
-        <CardHeader>
-          <CardTitle>Documents ({docCount})</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Documents ({docCount})</CardTitle>
+            <Link href={`/folders/${id}/upload`}>
+              <Button variant="outline" size="sm">
+                <Upload className="mr-2 h-4 w-4" />
+                Ajouter
+              </Button>
+            </Link>
+          </div>
         </CardHeader>
-        <CardContent>
-          {docCount === 0 ? (
-            <p className="text-muted-foreground">Aucun document uploadé.</p>
-          ) : (
+        <CardContent className="space-y-4">
+          {/* Trio checklist */}
+          <div className="flex flex-wrap gap-3">
+            <ChecklistItem
+              label="Contrat"
+              done={hasContract}
+              icon={<FileCheck className="h-3.5 w-3.5" />}
+            />
+            <ChecklistItem
+              label="Devis"
+              done={hasProposal}
+              icon={<FileText className="h-3.5 w-3.5" />}
+            />
+            <ChecklistItem
+              label="Facture"
+              done={hasInvoice}
+              icon={<Receipt className="h-3.5 w-3.5" />}
+            />
+          </div>
+
+          {/* Document list */}
+          {docCount > 0 && (
             <ul className="space-y-2">
               {documents!.map((d) => (
-                <li key={d.id} className="flex items-center justify-between rounded border p-3">
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5"
+                >
                   <div>
-                    <p className="font-medium">{d.filename}</p>
+                    <p className="text-sm font-medium">{d.filename}</p>
                     <p className="text-xs text-muted-foreground">
                       {(d.size_bytes / 1024).toFixed(0)} Ko · {formatDate(d.created_at)}
                     </p>
                   </div>
-                  <Badge variant={d.type === "unknown" ? "outline" : "secondary"}>{labelType(d.type)}</Badge>
+                  <DocTypeBadge type={d.type} />
                 </li>
               ))}
             </ul>
           )}
-          <div className="mt-4 flex gap-3">
-            <Link href={`/folders/${id}/upload`}>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Ajouter des documents
-              </Button>
-            </Link>
-            {docCount > 0 && (
-              <StartAuditButton folderId={id} disabled={false} />
-            )}
-          </div>
-          {docCount > 0 && !hasAll3 && (
-            <p className="mt-3 text-sm text-amber-600">
-              Pour un audit complet, uploadez le <strong>trio gagnant</strong> : Contrat + Devis + Facture.
+
+          {docCount === 0 && (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Aucun document — uploadez le trio contrat / devis / facture pour lancer l'audit.
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Audits</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!audits || audits.length === 0 ? (
-            <p className="text-muted-foreground">Aucun audit. Lancez-en un depuis le bouton ci-dessus.</p>
-          ) : (
+      {/* Lancer l'audit */}
+      {docCount > 0 && (
+        <Card className={hasAll3 ? "border-primary/30 bg-primary/5" : ""}>
+          <CardContent className="py-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="font-semibold">
+                  {hasAll3 ? "Dossier complet — prêt pour l'audit" : "Lancer l'audit"}
+                </p>
+                {!hasAll3 && (
+                  <p className="mt-0.5 text-sm text-amber-600">
+                    Pour un résultat optimal, ajoutez le{" "}
+                    <strong>trio gagnant</strong> : Contrat + Devis + Facture
+                  </p>
+                )}
+                {hasAll3 && (
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Contrat · Devis · Facture sont présents ✓
+                  </p>
+                )}
+              </div>
+              <StartAuditButton folderId={id} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Audit history */}
+      {audits && audits.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Historique des audits ({audits.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
             <ul className="space-y-2">
               {audits.map((a) => (
-                <li key={a.id} className="flex items-center justify-between rounded border p-3">
-                  <div>
-                    <p className="font-medium">Audit du {formatDate(a.created_at)}</p>
-                    <p className="text-xs text-muted-foreground">Statut : {a.status}</p>
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between rounded-lg border px-3 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <AuditStatusIcon status={a.status} />
+                    <div>
+                      <p className="text-sm font-medium">
+                        Audit du {formatDate(a.created_at)}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">{a.status}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {a.total_savings_eur && (
-                      <span className="font-semibold text-green-600">
+                    {a.total_savings_eur && Number(a.total_savings_eur) > 0 && (
+                      <span className="flex items-center gap-1 text-sm font-bold text-green-600">
+                        <TrendingDown className="h-3.5 w-3.5" />
                         {formatEur(Number(a.total_savings_eur))}
                       </span>
                     )}
@@ -115,13 +194,64 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
                 </li>
               ))}
             </ul>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
-function labelType(t: string) {
-  return { contract: "Contrat", proposal: "Devis", invoice: "Facture", unknown: "Inconnu" }[t] ?? t;
+function ChecklistItem({
+  label,
+  done,
+  icon,
+}: {
+  label: string;
+  done: boolean;
+  icon: React.ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+        done
+          ? "border-green-200 bg-green-50 text-green-700"
+          : "border-dashed border-muted-foreground/30 text-muted-foreground"
+      }`}
+    >
+      {done ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+      ) : (
+        <Circle className="h-3.5 w-3.5 opacity-40" />
+      )}
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+function DocTypeBadge({ type }: { type: string }) {
+  const map: Record<string, { label: string; className: string }> = {
+    contract: { label: "Contrat", className: "bg-blue-100 text-blue-700 border-blue-200" },
+    proposal: { label: "Devis", className: "bg-amber-100 text-amber-700 border-amber-200" },
+    invoice: { label: "Facture", className: "bg-green-100 text-green-700 border-green-200" },
+    unknown: { label: "Inconnu", className: "bg-muted text-muted-foreground border-muted" },
+  };
+  const cfg = map[type] ?? { label: type, className: "bg-muted text-muted-foreground" };
+  return (
+    <span
+      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+function AuditStatusIcon({ status }: { status: string }) {
+  if (status === "completed")
+    return <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />;
+  if (status === "processing" || status === "pending")
+    return <Clock className="h-4 w-4 text-blue-500 shrink-0 animate-pulse" />;
+  if (status === "failed")
+    return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
+  return <Circle className="h-4 w-4 text-muted-foreground shrink-0" />;
 }
