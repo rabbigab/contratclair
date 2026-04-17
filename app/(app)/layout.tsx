@@ -17,14 +17,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className="border-b bg-background">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/app/dashboard" className="text-xl font-bold">
+            <Link href="/dashboard" className="text-xl font-bold">
               Trust<span className="text-primary">Hub</span>
             </Link>
             <div className="flex gap-4">
-              <Link href="/app/dashboard" className="text-sm font-medium hover:text-primary">
+              <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
                 Dashboard
               </Link>
-              <Link href="/app/folders" className="text-sm font-medium hover:text-primary">
+              <Link href="/folders" className="text-sm font-medium hover:text-primary">
                 Dossiers
               </Link>
             </div>
