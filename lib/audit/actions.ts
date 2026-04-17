@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { runAuditPipeline, type DocInput } from "./pipeline";
 import { revalidatePath } from "next/cache";
@@ -27,7 +28,6 @@ export async function startAuditAction(folderId: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Non authentifié");
 
-  // Récupérer les documents du dossier
   const { data: documents, error: docsErr } = await supabase
     .from("documents")
     .select("*")
@@ -37,7 +37,6 @@ export async function startAuditAction(folderId: string) {
   if (docsErr) throw docsErr;
   if (!documents || documents.length === 0) throw new Error("Aucun document dans ce dossier");
 
-  // Créer l'audit en 'processing'
   const { data: audit, error: auditErr } = await supabase
     .from("audits")
     .insert({
@@ -51,11 +50,31 @@ export async function startAuditAction(folderId: string) {
 
   if (auditErr || !audit) throw auditErr ?? new Error("Échec création audit");
 
-  // Lancer en arrière-plan (fire-and-forget sur Vercel = attention timeout)
-  // Pour MVP : on attend synchrone, timeout à augmenter si besoin
+  // Lance le pipeline EN ARRIÈRE-PLAN — on redirige immédiatement
+  after(async () => {
+    await runPipelineBackground(audit.id, folderId, user.id, documents);
+  });
+
+  revalidatePath(`/folders/${folderId}`);
+  return { auditId: audit.id, status: "processing" as const };
+}
+
+async function runPipelineBackground(
+  auditId: string,
+  folderId: string,
+  userId: string,
+  documents: Array<{
+    id: string;
+    type: string;
+    storage_path: string;
+    filename: string;
+    mime_type: string;
+    size_bytes: number;
+  }>
+) {
+  const svc = createServiceClient();
+
   try {
-    // Télécharger les fichiers depuis Supabase Storage
-    const svc = createServiceClient();
     const docsInput: DocInput[] = await Promise.all(
       documents.map(async (d) => {
         const { data } = await svc.storage.from("documents").download(d.storage_path);
@@ -75,8 +94,7 @@ export async function startAuditAction(folderId: string) {
 
     if (!report) throw new Error("Rapport IA vide");
 
-    // Sauvegarder audit + findings
-    await supabase
+    await svc
       .from("audits")
       .update({
         status: "completed",
@@ -89,10 +107,10 @@ export async function startAuditAction(folderId: string) {
         tokens_output: result.metadata.tokens_output,
         cost_eur: result.metadata.cost_eur,
       })
-      .eq("id", audit.id);
+      .eq("id", auditId);
 
     const findingsRows = report.findings.map((f) => ({
-      audit_id: audit.id,
+      audit_id: auditId,
       severity: f.severity,
       category: f.category,
       title: f.title,
@@ -104,22 +122,16 @@ export async function startAuditAction(folderId: string) {
     }));
 
     if (findingsRows.length > 0) {
-      await supabase.from("audit_findings").insert(findingsRows);
+      await svc.from("audit_findings").insert(findingsRows);
     }
 
-    // Anonymisation pour benchmark si consentement
-    await maybePushToBenchmark(user.id, result);
-
-    revalidatePath(`/audits/${audit.id}`);
-    revalidatePath(`/folders/${folderId}`);
-    return { auditId: audit.id, status: "completed" };
+    await maybePushToBenchmark(userId, result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
-    await supabase
+    await svc
       .from("audits")
       .update({ status: "failed", error_message: msg })
-      .eq("id", audit.id);
-    throw e;
+      .eq("id", auditId);
   }
 }
 
@@ -144,7 +156,6 @@ async function maybePushToBenchmark(userId: string, result: Awaited<ReturnType<t
   const c = (result.contract as ContractShape | null) ?? null;
   if (!c) return;
 
-  // hash opaque pour déduplication sans ré-identification
   const crypto = await import("crypto");
   const hash = crypto
     .createHash("sha256")
