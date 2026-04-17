@@ -8,6 +8,8 @@ import { formatDate, formatEur } from "@/lib/utils";
 import { Upload, Play } from "lucide-react";
 import { StartAuditButton } from "./start-audit-button";
 
+export const maxDuration = 300; // allow up to 5 min for AI pipeline
+
 export default async function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
