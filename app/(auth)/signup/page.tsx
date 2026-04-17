@@ -48,7 +48,7 @@ export default function SignupPage() {
         .eq("id", data.user.id);
     }
 
-    router.push("/app/dashboard");
+    router.push("/dashboard");
     router.refresh();
   }
 
