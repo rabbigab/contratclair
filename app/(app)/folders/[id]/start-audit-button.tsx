@@ -16,7 +16,7 @@ export function StartAuditButton({ folderId, disabled }: { folderId: string; dis
     setLoading(true);
     try {
       const res = await startAuditAction(folderId);
-      router.push(`/app/audits/${res.auditId}`);
+      router.push(`/audits/${res.auditId}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur";
       setError(msg);

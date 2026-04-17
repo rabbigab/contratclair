@@ -10,7 +10,7 @@ Afficher le rapport 3 colonnes, permettre l'export PDF white-label et le partage
 
 ### ST-029 — Page rapport d'audit 3 colonnes (8 pts)
 **AC** :
-- Route `/app/audits/[id]`
+- Route `/audits/[id]`
 - Colonnes : Promis / Payé réellement / Plan
 - KPI header : économies détectées, score confiance
 - Listing findings avec severity badges

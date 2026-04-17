@@ -110,8 +110,8 @@ export async function startAuditAction(folderId: string) {
     // Anonymisation pour benchmark si consentement
     await maybePushToBenchmark(user.id, result);
 
-    revalidatePath(`/app/audits/${audit.id}`);
-    revalidatePath(`/app/folders/${folderId}`);
+    revalidatePath(`/audits/${audit.id}`);
+    revalidatePath(`/folders/${folderId}`);
     return { auditId: audit.id, status: "completed" };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";

@@ -35,7 +35,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/app/folders/new">
+        <Link href="/folders/new">
           <Button>
             <FolderPlus className="mr-2 h-4 w-4" />
             Nouveau dossier
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
             <p className="text-muted-foreground">
               Aucun audit pour l'instant. Créez votre premier dossier pour commencer.
             </p>
-            <Link href="/app/folders/new" className="mt-4 inline-block">
+            <Link href="/folders/new" className="mt-4 inline-block">
               <Button>Créer mon premier dossier</Button>
             </Link>
           </CardContent>

@@ -72,7 +72,7 @@ export default function UploadPage({ params }: { params: Promise<{ id: string }>
         });
         if (dbErr) throw dbErr;
       }
-      router.push(`/app/folders/${folderId}`);
+      router.push(`/folders/${folderId}`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur upload");

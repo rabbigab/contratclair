@@ -9,7 +9,7 @@ L'utilisateur peut créer un dossier, y uploader ses documents et voir l'OCR ext
 ## Stories
 
 ### ST-008 — CRUD dossiers (backend + frontend) (5 pts)
-**AC** : endpoints REST /folders · page /app/folders avec liste + création + archive.
+**AC** : endpoints REST /folders · page /folders avec liste + création + archive.
 
 ### ST-009 — Modèle organisations & multi-tenant (5 pts)
 **AC** : chaque user appartient à une org, isolation stricte des données par org_id.

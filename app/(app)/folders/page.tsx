@@ -17,7 +17,7 @@ export default async function FoldersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Mes dossiers</h1>
-        <Link href="/app/folders/new">
+        <Link href="/folders/new">
           <Button>
             <FolderPlus className="mr-2 h-4 w-4" />
             Nouveau dossier
@@ -34,7 +34,7 @@ export default async function FoldersPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {folders.map((f) => (
-            <Link key={f.id} href={`/app/folders/${f.id}`}>
+            <Link key={f.id} href={`/folders/${f.id}`}>
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="pt-6">
                   <h3 className="font-semibold">{f.name}</h3>

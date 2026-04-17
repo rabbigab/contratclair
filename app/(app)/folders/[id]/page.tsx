@@ -65,7 +65,7 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
             </ul>
           )}
           <div className="mt-4 flex gap-3">
-            <Link href={`/app/folders/${id}/upload`}>
+            <Link href={`/folders/${id}/upload`}>
               <Button variant="outline">
                 <Upload className="mr-2 h-4 w-4" />
                 Ajouter des documents
@@ -104,7 +104,7 @@ export default async function FolderPage({ params }: { params: Promise<{ id: str
                         {formatEur(Number(a.total_savings_eur))}
                       </span>
                     )}
-                    <Link href={`/app/audits/${a.id}`}>
+                    <Link href={`/audits/${a.id}`}>
                       <Button size="sm" variant="outline">
                         Voir
                       </Button>

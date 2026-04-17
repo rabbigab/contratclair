@@ -44,7 +44,7 @@ export default function NewFolderPage() {
       return;
     }
 
-    router.push(`/app/folders/${data.id}`);
+    router.push(`/folders/${data.id}`);
   }
 
   return (
